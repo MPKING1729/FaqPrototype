@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FAQ System</title>
+</head>
+<body>
+  <h1>FAQ Dropdown System</h1>
+  <select id="issue"></select>
+  <select id="subissue"></select>
+  <select id="version"></select>
+  <div id="solution"></div>
+
+  <script>
+    async function fetchAndPopulate(url, selectId, next = null) {
+      const res = await fetch(url);
+      const data = await res.json();
+      const select = document.getElementById(selectId);
+      select.innerHTML = '<option value="">Select</option>';
+      data.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.name;
+        select.appendChild(option);
+      });
+      if (next) select.onchange = () => next(select.value);
+    }
+
+    async function fetchSolution(versionId) {
+      const res = await fetch(`http://localhost:3000/solution/${versionId}`);
+      const data = await res.json();
+      const div = document.getElementById('solution');
+      div.innerHTML = `
+        <p>${data.text}</p>
+        ${data.image ? `<img src="${data.image}" width="300"/>` : ''}
+        ${data.link ? `<p><a href="${data.link}" target="_blank">More Info</a></p>` : ''}
+      `;
+    }
+
+    fetchAndPopulate('http://localhost:3000/issues', 'issue', issueId => {
+      fetchAndPopulate(`http://localhost:3000/subissues/${issueId}`, 'subissue', subId => {
+        fetchAndPopulate(`http://localhost:3000/versions/${subId}`, 'version', versionId => {
+          fetchSolution(versionId);
+        });
+      });
+    });
+  </script>
+</body>
+</html>
